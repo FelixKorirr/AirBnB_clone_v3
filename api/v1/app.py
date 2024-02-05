@@ -25,11 +25,11 @@ def teardown(exception):
 @app.errorhandler(404)
 def handle_404(exception):
     """handles 404 error"""
-    data = {
+    my_data = {
         "error": "Not found"
     }
 
-    resp = jsonify(data)
+    resp = jsonify(my_data)
     resp.status_code = 404
 
     return(resp)
