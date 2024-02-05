@@ -86,3 +86,73 @@ class TestFileStorage(unittest.TestCase):
     @unittest.skipIf(models.storage_t != 'db', "not testing db storage")
     def test_save(self):
         """Test that save properly saves objects to file.json"""
+
+class TestStorageGet(unittest.TestCase):
+    """Testing get method in DBStorage"""
+
+    def setUp(self):
+        """setUp method"""
+        self.state = State(name="Florida")
+        self.state.save()
+
+    def test_get_method_obj(self):
+        """testing get method"""
+        result = models.storage.get(cls="State", id=self.state.id)
+
+        self.assertIsInstance(result, State)
+
+    def test_get_method_return(self):
+        """Testing get method for id match"""
+        result = models.storage.get(cls="State", id=str(self.state.id))
+
+        self.assertEqual(self.state.id, result.id)
+
+    def test_get_method_none(self):
+        """Testing get method for None return value"""
+        result = models.storage.get(cls="State", id="doesnotexist")
+
+        self.assertIsNone(result)
+
+
+@unittest.skipIf(models.storage_type != 'db', 'skip if environ is not db')
+class TestStorageCount(unittest.TestCase):
+    """Tests the count method in DBStorage"""
+
+    def setup(self):
+        """setup method"""
+        self.state1 = State(name="Kitui")
+        self.state1.save()
+        self.state2 = State(name="Kisii")
+        self.state2.save()
+        self.state3 = State(name="Machakos")
+        self.state3.save()
+        self.state4 = State(name="Virgina")
+        self.state4.save()
+        self.state5 = State(name="Qatar")
+        self.state5.save()
+        self.state6 = State(name="Kampi")
+        self.state6.save()
+        self.state7 = State(name="Kaptere")
+        self.state7.save()
+
+    def test_count_all(self):
+        """Testing counting all instances"""
+        result = models.storage.count()
+
+        self.assertEqual(len(models.storage.all()), result)
+
+    def test_count_state(self):
+        """Testing counting state instances"""
+        result = models.storage.count(cls="State")
+
+        self.assertEqual(len(models.storage.all("State")), result)
+
+    def test_count_city(self):
+        """Testing counting non-existent"""
+        result = models.storage.count(cls="City")
+
+        self.assertEqual(int(0 if len(models.storage.all("City")) is None else
+                             len(models.storage.all("City"))), result)
+
+if __name__ == '__main__':
+    unittest.main

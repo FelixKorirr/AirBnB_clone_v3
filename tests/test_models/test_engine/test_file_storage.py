@@ -113,3 +113,74 @@ class TestFileStorage(unittest.TestCase):
         with open("file.json", "r") as f:
             js = f.read()
         self.assertEqual(json.loads(string), json.loads(js))
+
+class TestStorageGet(unittest.TestCase):
+    """
+    Testing get method in DBStorage
+    """
+
+    def setUp(self):
+        """setUp method"""
+        self.state = models.state.State(name="Florida")
+        self.state.save()
+
+    def test_get_method_obj(self):
+        """testing get method"""
+
+        print(self.state.id)
+        result = models.storage.get(cls="State", id=self.state.id)
+
+        self.assertIsInstance(result, models.state.State)
+
+    def test_get_method_return(self):
+        """Testing get method for id match"""
+        result = models.storage.get(cls="State", id=str(self.state.id))
+
+        self.assertEqual(self.state.id, result.id)
+
+    def test_get_method_none(self):
+        """Testing get() method for None return"""
+        result = models.storage.get(cls="State", id="doesnotexist")
+
+        self.assertIsNone(result)
+
+
+@unittest.skipIf(models.storage_type == 'db', 'skip if environ is not db')
+class TestStorageCount(unittest.TestCase):
+    """Tests count() method in DBStorage"""
+
+    def setup(self):
+        """setUp method"""
+        models.state.State()
+        models.state.State()
+        models.state.State()
+        models.state.State()
+        models.state.State()
+        models.state.State()
+        models.state.State()
+
+    def test_count_all(self):
+        """Testing counting all instances"""
+        result = models.storage.count()
+
+        self.assertEqual(len(models.storage.all()), result)
+
+    def test_count_state(self):
+        """Testing counting state instances"""
+        result = models.storage.count(cls="State")
+
+        self.assertEqual(len(models.storage.all("State")), result)
+
+    def test_count_city(self):
+        """
+        Testing counting non existent
+        """
+        result = models.storage.count(cls="City")
+
+        self.assertEqual(
+            int(0 if len(models.storage.all("City")) is None else
+                len(models.storage.all("City"))), result)
+
+
+if __name__ == '__main__':
+    unittest.main
