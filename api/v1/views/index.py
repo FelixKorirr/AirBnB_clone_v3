@@ -10,11 +10,11 @@ from models import storage
 @app_views.route("/status", methods=['GET'], strict_slashes=False)
 def status():
     """Status route"""
-    my_data = {
+    data = {
         "status": "OK"
     }
 
-    resp = jsonify(my_data)
+    resp = jsonify(data)
     resp.status_code = 200
 
     return resp
@@ -23,7 +23,7 @@ def status():
 @app_views.route("/stats", methods=['GET'], strict_slashes=False)
 def stats():
     """stats of all objs route"""
-    my_data = {
+    data = {
         "amenities": storage.count("Amenity"),
         "cities": storage.count("City"),
         "places": storage.count("Place"),
@@ -32,7 +32,7 @@ def stats():
         "users": storage.count("User"),
     }
 
-    resp = jsonify(my_data)
+    resp = jsonify(data)
     resp.status_code = 200
 
     return resp
