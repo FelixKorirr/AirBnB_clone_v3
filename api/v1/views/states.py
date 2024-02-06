@@ -10,12 +10,10 @@ from flasgger.utils import swag_from
 @app_views.route('/states', methods=['GET'], strict_slashes=False)
 @swag_from('documentation/state/get_state.yml', methods=['GET'])
 def get_states():
-    """
-    Retrieves the list of all State objects
-    """
-    all_states = storage.all(State).values()
+    """Retrieves a list of all State objects"""
+    states = storage.all(State).values()
     list_states = []
-    for state in all_states:
+    for state in states:
         list_states.append(state.to_dict())
     return jsonify(list_states)
 
@@ -35,9 +33,7 @@ def get_state(state_id):
                  strict_slashes=False)
 @swag_from('documentation/state/delete_state.yml', methods=['DELETE'])
 def delete_state(state_id):
-    """
-    Deletes a State Object
-    """
+    """Deletes a State Object"""
 
     state = storage.get(State, state_id)
 
@@ -52,28 +48,24 @@ def delete_state(state_id):
 
 @app_views.route('/states', methods=['POST'], strict_slashes=False)
 @swag_from('documentation/state/post_state.yml', methods=['POST'])
-def post_state():
-    """
-    Creates a State
-    """
+def create_state():
+    """Creates a State"""
     if not request.get_json():
         abort(400, description="Not a JSON")
 
     if 'name' not in request.get_json():
         abort(400, description="Missing name")
 
-    data = request.get_json()
-    instance = State(**data)
-    instance.save()
-    return make_response(jsonify(instance.to_dict()), 201)
+    my_data = request.get_json()
+    obj = State(**my_data)
+    obj.save()
+    return make_response(jsonify(obj.to_dict()), 201)
 
 
 @app_views.route('/states/<state_id>', methods=['PUT'], strict_slashes=False)
 @swag_from('documentation/state/put_state.yml', methods=['PUT'])
-def put_state(state_id):
-    """
-    Updates a State
-    """
+def update_state(state_id):
+    """Updates the State object"""
     state = storage.get(State, state_id)
 
     if not state:
@@ -85,8 +77,8 @@ def put_state(state_id):
     ignore = ['id', 'created_at', 'updated_at']
 
     data = request.get_json()
-    for key, value in data.items():
-        if key not in ignore:
-            setattr(state, key, value)
+    for k, v in data.items():
+        if k not in ignore:
+            setattr(state, k, v)
     storage.save()
     return make_response(jsonify(state.to_dict()), 200)
