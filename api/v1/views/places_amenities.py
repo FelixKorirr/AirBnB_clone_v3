@@ -1,89 +1,89 @@
 #!/usr/bin/python3
-"""Route for handling place and amenities linking"""
+""" Objects that handle default Rest API actions for Place - Amenity """
+from models.place import Place
+from models.amenity import Amenity
+from models import storage
+from api.v1.views import app_views
+from os import environ
+from flask import abort, jsonify, make_response, request
+from flasgger.utils import swag_from
 
-from flask import jsonify, abort
-from os import getenv
-from api.v1.views import app_views, storage
 
-
-@app_views.route("/places/<place_id>/amenities",
-                 methods=["GET"],
+@app_views.route('places/<place_id>/amenities', methods=['GET'],
                  strict_slashes=False)
-def amenity_by_place(place_id):
-    """Get all amenities of a place"""
-    my_obj = storage.get("Place", str(place_id))
+@swag_from('documentation/place_amenity/get_places_amenities.yml',
+           methods=['GET'])
+def get_place_amenities(place_id):
+    """Retrieves a list of all Amenity objects of a Place"""
+    place = storage.get(Place, place_id)
 
-    total_amenities = []
-
-    if my_obj is None:
+    if not place:
         abort(404)
 
-    for obj in my_obj.amenities:
-        total_amenities.append(obj.to_json())
-
-    return jsonify(total_amenities)
-
-
-@app_views.route("/places/<place_id>/amenities/<amenity_id>",
-                 methods=["DELETE"],
-                 strict_slashes=False)
-def unlink_amenity_from_place(place_id, amenity_id):
-    """Unlinks an amenity in a place"""
-    if not storage.get("Place", str(place_id)):
-        abort(404)
-    if not storage.get("Amenity", str(amenity_id)):
-        abort(404)
-
-    my_obj = storage.get("Place", place_id)
-    found = 0
-
-    for obj in my_obj.amenities:
-        if str(obj.id) == amenity_id:
-            if getenv("HBNB_TYPE_STORAGE") == "db":
-                my_obj.amenities.remove(obj)
-            else:
-                my_obj.amenity_ids.remove(obj.id)
-            my_obj.save()
-            found = 1
-            break
-
-    if found == 0:
-        abort(404)
+    if environ.get('HBNB_TYPE_STORAGE') == "db":
+        all_amenities = [amenity.to_dict() for amenity in place.all_amenities]
     else:
-        resp = jsonify({})
-        resp.status_code = 201
-        return resp
+        all_amenities = [storage.get(Amenity, amenity_id).to_dict()
+                     for amenity_id in place.amenity_ids]
+
+    return jsonify(all_amenities)
 
 
-@app_views.route("/places/<place_id>/amenities/<amenity_id>",
-                 methods=["POST"],
-                 strict_slashes=False)
-def link_amenity_to_place(place_id, amenity_id):
-    """Links amenity to a place"""
+@app_views.route('/places/<place_id>/all_amenities/<amenity_id>',
+                 methods=['DELETE'], strict_slashes=False)
+@swag_from('documentation/place_amenity/delete_place_amenities.yml',
+           methods=['DELETE'])
+def delete_place_amenity(place_id, amenity_id):
+    """Deletes an Amenity object of a Place"""
+    place = storage.get(Place, place_id)
 
-    my_obj = storage.get("Place", str(place_id))
-    amenity_obj = storage.get("Amenity", str(amenity_id))
-    amenity_found = None
-
-    if not my_obj or not amenity_obj:
+    if not place:
         abort(404)
 
-    for obj in my_obj.amenities:
-        if str(obj.id) == amenity_id:
-            amenity_found = obj
-            break
+    amenity = storage.get(Amenity, amenity_id)
 
-    if amenity_found is not None:
-        return jsonify(amenity_found.to_json())
+    if not amenity:
+        abort(404)
 
-    if getenv("HBNB_TYPE_STORAGE") == "db":
-        my_obj.amenities.append(amenity_obj)
+    if environ.get('HBNB_TYPE_STORAGE') == "db":
+        if amenity not in place.all_amenities:
+            abort(404)
+        place.all_amenities.remove(amenity)
     else:
-        my_obj.amenities = amenity_obj
+        if amenity_id not in place.amenity_ids:
+            abort(404)
+        place.amenity_ids.remove(amenity_id)
 
-    my_obj.save()
+    storage.save()
+    return make_response(jsonify({}), 200)
 
-    resp = jsonify(amenity_obj.to_json())
-    resp.status_code = 201
 
-    return resp
+@app_views.route('/places/<place_id>/all_amenities/<amenity_id>', methods=['POST'],
+                 strict_slashes=False)
+@swag_from('documentation/place_amenity/post_place_amenities.yml',
+           methods=['POST'])
+def create_place_amenity(place_id, amenity_id):
+    """Link an Amenity object to a Place"""
+    place = storage.get(Place, place_id)
+
+    if not place:
+        abort(404)
+
+    amenity = storage.get(Amenity, amenity_id)
+
+    if not amenity:
+        abort(404)
+
+    if environ.get('HBNB_TYPE_STORAGE') == "db":
+        if amenity in place.all_amenities:
+            return make_response(jsonify(amenity.to_dict()), 200)
+        else:
+            place.all_amenities.append(amenity)
+    else:
+        if amenity_id in place.amenity_ids:
+            return make_response(jsonify(amenity.to_dict()), 200)
+        else:
+            place.amenity_ids.append(amenity_id)
+
+    storage.save()
+    return make_response(jsonify(amenity.to_dict()), 201)
