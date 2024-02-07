@@ -1,10 +1,8 @@
 #!/usr/bin/python3
-"""
-route for handling place and amenities linking
-"""
+"""Route for handling place and amenities linking"""
+
 from flask import jsonify, abort
 from os import getenv
-
 from api.v1.views import app_views, storage
 
 
